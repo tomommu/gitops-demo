@@ -1,0 +1,43 @@
+name: CI/CD - Secure App with Trivy & ArgoCD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t node-app-secure -f app-secure/Dockerfile app-secure
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+          trivy --version
+
+      - name: Scan image with Trivy
+        run: |
+          trivy image --exit-code 1 --severity HIGH,CRITICAL node-app-secure
+
+      - name: Log in to Docker Hub
+        if: ${{ success() }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push image to Docker Hub
+        if: ${{ success() }}
+        run: |
+          docker tag node-app-secure ${{ secrets.DOCKERHUB_USERNAME }}/node-app-secure:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/node-app-secure:latest

@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-app-secure
+  namespace: node-app-secure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-app-secure
+  template:
+    metadata:
+      labels:
+        app: node-app-secure
+    spec:
+      containers:
+      - name: node-app-secure
+        image: tomtomou/node-app-secure:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
